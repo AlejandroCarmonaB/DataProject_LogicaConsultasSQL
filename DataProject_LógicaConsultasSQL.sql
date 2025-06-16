@@ -178,3 +178,58 @@ FROM RENTAL AS R
 GROUP by RENTAL_MONTH
 ORDER BY RENTAL_MONTH ;
 
+
+-- 26. Encuentra el promedio, la desviación estándar y varianza del total pagado.
+SELECT 
+    AVG(P.AMOUNT) AS AVERAGE_AMOUNT,
+    STDDEV(P.AMOUNT) AS STANDARD_DEVIATION,
+    VARIANCE(P.AMOUNT) AS VARIANCE_AMOUNT
+FROM PAYMENT AS P;
+
+
+-- 27. ¿Qué películas se alquilan por encima del precio medio?
+WITH average_price AS (
+  SELECT AVG(amount) AS media FROM payment
+),
+
+movies_with_prices AS (
+  SELECT f.title, p.amount
+  FROM film f
+  JOIN inventory i ON f.film_id = i.film_id
+  JOIN rental r ON i.inventory_id = r.inventory_id
+  JOIN payment p ON r.rental_id = p.rental_id
+)
+
+SELECT DISTINCT title
+FROM movies_with_prices, average_price
+WHERE movies_with_prices.amount > average_price.media
+ORDER BY title;
+
+
+-- 28. Muestra el id de los actores que hayan participado en más de 40 películas.
+SELECT A.ACTOR_ID, A.FIRST_NAME ,A.LAST_NAME ,COUNT(F.FILM_ID) AS TOTAL_MOVIES
+FROM FILM AS F 
+INNER JOIN FILM_ACTOR AS FA 
+	ON F.FILM_ID = FA.FILM_ID 
+INNER JOIN ACTOR AS A 
+	ON FA.ACTOR_ID = A.ACTOR_ID 
+GROUP BY A.ACTOR_ID 
+HAVING COUNT(F.FILM_ID) > 40;
+
+
+--29. Obtener todas las películas y, si están disponibles en el inventario, mostrar la cantidad disponible.
+SELECT F.FILM_ID, F.TITLE, COUNT(I.INVENTORY_ID) AS COPIAS_DISPONIBLES
+FROM FILM AS F
+LEFT JOIN INVENTORY AS I ON F.FILM_ID = I.FILM_ID
+GROUP BY F.FILM_ID, F.TITLE
+ORDER BY F.TITLE;
+
+
+-- 30. Obtener los actores y el número de películas en las que ha actuado.
+SELECT A.FIRST_NAME, A.LAST_NAME, COUNT(F.FILM_ID) AS ACTING_IN_MOVIES
+FROM ACTOR AS A 
+INNER JOIN FILM_ACTOR AS FA 
+	ON A.ACTOR_ID = FA.ACTOR_ID
+INNER JOIN FILM AS F 
+	ON FA.FILM_ID = F.FILM_ID 
+GROUP BY  A.FIRST_NAME, A.LAST_NAME;
