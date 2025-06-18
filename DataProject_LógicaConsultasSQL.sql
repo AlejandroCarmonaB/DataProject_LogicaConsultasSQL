@@ -104,13 +104,18 @@ LIMIT 10;
 
 
 -- 17. Encuentra el nombre y apellido de los actores que aparecen en la película con título ‘Egg Igby’.
-SELECT  A.FIRST_NAME , A.LAST_NAME 
-FROM ACTOR AS A 
-INNER JOIN FILM_ACTOR AS FA 
-	ON A.ACTOR_ID = FA.ACTOR_ID 
-INNER JOIN FILM AS F 
-	ON FA.FILM_ID = F.FILM_ID 
-WHERE F.TITLE = 'EGG IGBY';
+	--Creamos una vista del enlace entre las tablas ya que vamos a usarlo varias veces en los ejercicios.
+ CREATE VIEW ACTOR_FILM AS 
+	SELECT A.FIRST_NAME, A.LAST_NAME, A.ACTOR_ID, F.FILM_ID
+	FROM ACTOR AS A 
+	INNER JOIN FILM_ACTOR AS FA 
+		ON A.ACTOR_ID = FA.ACTOR_ID
+	INNER JOIN FILM AS F 
+		ON FA.FILM_ID = F.FILM_ID ;
+
+SELECT AF.FIRST_NAME ,AF.LAST_NAME 
+FROM ACTOR_FILM AS AF 
+WHERE AF.TITLE = 'EGG IGBY';
 
 
 -- 18. Selecciona todos los nombres de las películas únicos.
@@ -207,14 +212,10 @@ ORDER BY title;
 
 
 -- 28. Muestra el id de los actores que hayan participado en más de 40 películas.
-SELECT A.ACTOR_ID, A.FIRST_NAME ,A.LAST_NAME ,COUNT(F.FILM_ID) AS TOTAL_MOVIES
-FROM FILM AS F 
-INNER JOIN FILM_ACTOR AS FA 
-	ON F.FILM_ID = FA.FILM_ID 
-INNER JOIN ACTOR AS A 
-	ON FA.ACTOR_ID = A.ACTOR_ID 
-GROUP BY A.ACTOR_ID 
-HAVING COUNT(F.FILM_ID) > 40;
+SELECT AF.ACTOR_ID, AF.FIRST_NAME, AF.LAST_NAME, COUNT(AF.FILM_ID) AS TOTAL_MOVIES
+FROM ACTOR_FILM AS AF 
+GROUP BY AF.ACTOR_ID, AF.FIRST_NAME, AF.LAST_NAME
+HAVING COUNT(AF.FILM_ID) > 40;
 
 
 --29. Obtener todas las películas y, si están disponibles en el inventario, mostrar la cantidad disponible.
@@ -226,10 +227,110 @@ ORDER BY F.TITLE;
 
 
 -- 30. Obtener los actores y el número de películas en las que ha actuado.
-SELECT A.FIRST_NAME, A.LAST_NAME, COUNT(F.FILM_ID) AS ACTING_IN_MOVIES
+SELECT AF.FIRST_NAME , AF.LAST_NAME, COUNT(AF.FILM_ID) AS ACTING_IN_MOVIES
+from ACTOR_FILM AS AF 
+GROUP BY AF.FIRST_NAME ,AF.LAST_NAME ;
+
+
+-- 31. Obtener todas las películas y mostrar los actores que han actuado en ellas, incluso si algunas películas no tienen actores asociados.
+SELECT F.TITLE, A.FIRST_NAME, A.LAST_NAME
+FROM FILM AS F 
+LEFT JOIN FILM_ACTOR AS FA 
+	ON F.FILM_ID = FA.FILM_ID
+LEFT JOIN ACTOR AS A 
+	ON FA.ACTOR_ID  = A.ACTOR_ID
+ORDER BY F.TITLE ;
+
+
+-- 32. Obtener todos los actores y mostrar las películas en las que han actuado, incluso si algunos actores no han actuado en ninguna película.
+SELECT A.FIRST_NAME, A.LAST_NAME, F.TITLE
 FROM ACTOR AS A 
-INNER JOIN FILM_ACTOR AS FA 
+RIGHT JOIN FILM_ACTOR AS FA 
 	ON A.ACTOR_ID = FA.ACTOR_ID
-INNER JOIN FILM AS F 
-	ON FA.FILM_ID = F.FILM_ID 
-GROUP BY  A.FIRST_NAME, A.LAST_NAME;
+RIGHT JOIN FILM AS F 
+	ON FA.FILM_ID = F.FILM_ID
+ORDER BY A.FIRST_NAME, A.LAST_NAME, F.TITLE;
+
+
+-- 33. Obtener todas las películas que tenemos y todos los registros de alquiler.
+SELECT F.TITLE, R.RENTAL_ID, R.RENTAL_DATE
+FROM FILM AS F
+RIGHT JOIN INVENTORY AS I 
+	ON F.FILM_ID = I.INVENTORY_ID
+RIGHT JOIN RENTAL AS R 
+	ON I.INVENTORY_ID = R.RENTAL_ID
+ORDER BY F.TITLE;
+
+
+-- 34. Encuentra los 5 clientes que más dinero se hayan gastado con nosotros.
+SELECT C.CUSTOMER_ID, C.FIRST_NAME, C.LAST_NAME, P.AMOUNT
+FROM CUSTOMER AS C 
+JOIN PAYMENT AS P 
+	ON C.CUSTOMER_ID = P.PAYMENT_ID
+ORDER BY P.AMOUNT DESC LIMIT 5;
+
+
+-- 35. Selecciona todos los actores cuyo primer nombre es 'Johnny'.
+SELECT *
+FROM ACTOR AS A 
+WHERE A.FIRST_NAME LIKE '%JOHNNY%';
+	--En este caso lo he hecho asi, porque de esta forma, si en un futuro se introduce un nombre compuesto en la BBDD se contemplaria tambien.
+
+
+-- 36. Renombra la columna “first_name” como Nombre y “last_name” como Apellido.
+SELECT A.FIRST_NAME AS NOMBRE, A.LAST_NAME AS APELLIDO
+FROM ACTOR AS A;
+
+
+-- 37. Encuentra el ID del actor más bajo y más alto en la tabla actor.
+SELECT MIN(A.ACTOR_ID) AS FIRST_ACTOR, MAX(A.ACTOR_ID) AS LAST_ACTOR
+FROM ACTOR AS A;
+
+
+-- 38. Cuenta cuántos actores hay en la tabla “actor”.
+SELECT COUNT(A.ACTOR_ID ) AS TOTAL_ACTORS
+FROM ACTOR AS A;
+
+
+-- 39. Selecciona todos los actores y ordénalos por apellido en orden ascendente.
+SELECT *
+FROM ACTOR AS A
+ORDER BY A.LAST_NAME ASC;
+
+
+-- 40. Selecciona las primeras 5 películas de la tabla “film”.
+SELECT *
+FROM FILM AS F 
+ORDER BY F.FILM_ID ASC LIMIT 5;
+
+
+-- 41. Agrupa los actores por su nombre y cuenta cuántos actores tienen el mismo nombre. ¿Cuál es el nombre más repetido?
+SELECT A.FIRST_NAME, COUNT(A.FIRST_NAME) AS COUNTER_OF_NAMES 
+FROM ACTOR AS A 
+GROUP BY A.FIRST_NAME
+ORDER BY COUNTER_OF_NAMES DESC , A.FIRST_NAME;
+	-- Los nombres mas repetidos son: JULIA, KENNETH Y PENELOPE.
+
+
+-- 42. Encuentra todos los alquileres y los nombres de los clientes que los realizaron.
+SELECT R.RENTAL_ID, C.CUSTOMER_ID, C.FIRST_NAME, C.LAST_NAME
+FROM RENTAL AS R 
+LEFT JOIN CUSTOMER AS C 
+	ON R.CUSTOMER_ID = C.CUSTOMER_ID
+ORDER BY C.FIRST_NAME;
+
+
+-- 43. Muestra todos los clientes y sus alquileres si existen, incluyendo aquellos que no tienen alquileres.
+SELECT C.CUSTOMER_ID, C.FIRST_NAME, C.LAST_NAME, R.RENTAL_ID
+FROM CUSTOMER AS C 
+LEFT JOIN RENTAL AS R 
+	ON C.CUSTOMER_ID = R.CUSTOMER_ID
+ORDER BY C.FIRST_NAME;
+
+
+-- 44. Realiza un CROSS JOIN entre las tablas film y category. ¿Aporta valor esta consulta? ¿Por qué? Deja después de la consulta la contestación.
+select *
+FROM FILM AS F 
+CROSS JOIN CATEGORY AS C ;
+	-- Esta consulta no aportaria valor, ya que el cross join realiza todas las combinaciones posibles,sin hacer distinciones y en este caso, 
+	-- no tiene sentido que te muestre que una pelicula esta en una categoria a la cual no pertence en realidad.
