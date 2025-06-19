@@ -126,27 +126,29 @@ ORDER BY TITLE ;
 
 -- 19. Encuentra el título de las películas que son comedias y tienen una duración mayor a 
 -- 180 minutos en la tabla “film”.
-SELECT F.TITLE , F.LENGTH 
-FROM FILM AS F 
-INNER JOIN FILM_CATEGORY AS FC 
-	ON F.FILM_ID = FC.FILM_ID 
-INNER JOIN CATEGORY AS C 
-	ON FC.CATEGORY_ID = C.CATEGORY_ID
-WHERE C."name" = 'Comedy' AND F.LENGTH >180;
+	--Creamos una vista del enlace entre las tablas ya que vamos a usarlo varias veces en los ejercicios.
+CREATE VIEW CATEGORY_FILMS AS 
+	SELECT F.FILM_ID ,F.TITLE , F.LENGTH, c."name" 
+	FROM FILM AS F 
+	INNER JOIN FILM_CATEGORY AS FC 
+		ON F.FILM_ID = FC.FILM_ID
+	INNER JOIN CATEGORY AS C 
+		ON FC.CATEGORY_ID = C.CATEGORY_ID ;
+
+SELECT CF.TITLE , CF.LENGTH 
+FROM CATEGORY_FILMS AS CF 
+WHERE CF."name" = 'Comedy' AND CF.LENGTH >180;
 
 
 -- 20. Encuentra las categorías de películas que tienen un promedio de duración superior a 110 minutos 
 -- y muestra el nombre de la categoría junto con el promedio de duración.
-SELECT c.name , AVG(F.LENGTH) AS AVERAGE_LENGTH
-FROM FILM AS F 
-INNER JOIN FILM_CATEGORY AS FC 
-	ON F.FILM_ID = FC.FILM_ID 
-INNER JOIN CATEGORY AS C 
-	ON FC.CATEGORY_ID = C.CATEGORY_ID
-WHERE F.LENGTH > (
-	SELECT AVG(LENGTH)FROM FILM AS F2
+SELECT CF.name , AVG(CF.LENGTH) AS AVERAGE_LENGTH
+FROM CATEGORY_FILMS AS CF 
+WHERE CF.LENGTH > (
+	SELECT AVG(LENGTH)FROM CATEGORY_FILMS AS CF2 
 		) 
-GROUP BY C.name ;
+GROUP BY CF.name 
+ORDER BY CF."name" ;
 
 
 -- 21. ¿Cuál es la media de duración del alquiler de las películas?
@@ -334,3 +336,15 @@ FROM FILM AS F
 CROSS JOIN CATEGORY AS C ;
 	-- Esta consulta no aportaria valor, ya que el cross join realiza todas las combinaciones posibles,sin hacer distinciones y en este caso, 
 	-- no tiene sentido que te muestre que una pelicula esta en una categoria a la cual no pertence en realidad.
+
+
+-- 45. Encuentra los actores que han participado en películas de la categoría 'Action'.
+SELECT AF.FIRST_NAME, AF.LAST_NAME
+FROM ACTOR_FILM AS AF 
+INNER JOIN CATEGORY_FILMS AS CF 
+	ON AF.FILM_ID = CF.FILM_ID
+WHERE CF."name" = 'Action'
+ORDER BY AF.FIRST_NAME  ;
+
+
+-- 46. Encuentra todos los actores que no han participado en películas.
