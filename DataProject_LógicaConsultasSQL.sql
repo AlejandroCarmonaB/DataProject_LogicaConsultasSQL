@@ -1,4 +1,4 @@
----1. Crea el esquema de la BBDD.
+-- 1. Crea el esquema de la BBDD.
 	-- Se encuentra en el repositorio con el nombre de Proyecto-SQL - Esquema.png
 
 
@@ -128,7 +128,7 @@ ORDER BY TITLE ;
 -- 180 minutos en la tabla “film”.
 	--Creamos una vista del enlace entre las tablas ya que vamos a usarlo varias veces en los ejercicios.
 CREATE VIEW CATEGORY_FILMS AS 
-	SELECT F.FILM_ID ,F.TITLE , F.LENGTH, c."name" 
+SELECT F.FILM_ID ,F.TITLE , F.LENGTH,F.RELEASE_YEAR ,c."name" 
 	FROM FILM AS F 
 	INNER JOIN FILM_CATEGORY AS FC 
 		ON F.FILM_ID = FC.FILM_ID
@@ -506,3 +506,45 @@ ORDER BY F.TITLE ;
 
 -- 60. Encuentra los nombres de los clientes que han alquilado al menos 7 películas distintas. 
 -- Ordena los resultados alfabéticamente por apellido.
+SELECT C.CUSTOMER_ID,C.FIRST_NAME ,C.LAST_NAME,COUNT(I.FILM_ID) AS NUMBER_OF_FILMS
+FROM CUSTOMER AS C 
+INNER JOIN RENTAL AS R 
+	ON C.CUSTOMER_ID = R.CUSTOMER_ID
+INNER JOIN INVENTORY AS I 
+	ON R.INVENTORY_ID = I.INVENTORY_ID
+GROUP BY C.CUSTOMER_ID ,C.FIRST_NAME,C.LAST_NAME
+HAVING COUNT(I.FILM_ID) >=7
+ORDER BY C.LAST_NAME;
+
+
+-- 61. Encuentra la cantidad total de películas alquiladas por categoría y muestra el nombre de la categoría junto con el recuento de alquileres.
+SELECT CF."name", COUNT(R.RENTAL_ID) AS RENTALS
+FROM CATEGORY_FILMS AS CF 
+INNER JOIN INVENTORY AS I 
+	ON  CF.FILM_ID = I.FILM_ID
+INNER JOIN RENTAL AS R 
+	ON I.INVENTORY_ID = R.INVENTORY_ID
+GROUP BY CF."name"; 
+
+
+-- 62. Encuentra el número de películas por categoría estrenadas en 2006.
+SELECT CF."name", COUNT(CF.FILM_ID) AS NUMBER_OF_FILMS
+FROM CATEGORY_FILMS AS CF
+WHERE CF.RELEASE_YEAR = 2006
+GROUP BY CF."name" ;
+
+
+-- 63. Obtén todas las combinaciones posibles de trabajadores con las tiendas que tenemos.
+SELECT *
+FROM STAFF AS S 
+CROSS JOIN STORE AS S2 ;
+
+
+-- 64. Encuentra la cantidad total de películas alquiladas por cada cliente y muestra el ID del cliente, su nombre y apellido junto con la cantidad de
+-- películas alquiladas.
+SELECT C.CUSTOMER_ID ,C.FIRST_NAME, C.LAST_NAME, COUNT(R.RENTAL_ID) AS NUMBER_OF_FILMS
+FROM CUSTOMER AS C 
+INNER JOIN RENTAL AS R 
+	ON C.CUSTOMER_ID = R.CUSTOMER_ID
+GROUP BY C.CUSTOMER_ID
+ORDER BY C.CUSTOMER_ID; 
