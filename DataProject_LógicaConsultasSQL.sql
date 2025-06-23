@@ -1,4 +1,4 @@
---1. Crea el esquema de la BBDD.
+---1. Crea el esquema de la BBDD.
 	-- Se encuentra en el repositorio con el nombre de Proyecto-SQL - Esquema.png
 
 
@@ -256,12 +256,13 @@ ORDER BY A.FIRST_NAME, A.LAST_NAME, F.TITLE;
 
 -- 33. Obtener todas las películas que tenemos y todos los registros de alquiler.
 SELECT F.TITLE, R.RENTAL_ID, R.RENTAL_DATE
-FROM FILM AS F
+FROM RENTAL AS R
 RIGHT JOIN INVENTORY AS I 
-	ON F.FILM_ID = I.INVENTORY_ID
-RIGHT JOIN RENTAL AS R 
-	ON I.INVENTORY_ID = R.RENTAL_ID
+    ON R.INVENTORY_ID = I.INVENTORY_ID
+RIGHT JOIN FILM AS F 
+    ON I.FILM_ID = F.FILM_ID
 ORDER BY F.TITLE;
+
 
 
 -- 34. Encuentra los 5 clientes que más dinero se hayan gastado con nosotros.
@@ -348,3 +349,160 @@ ORDER BY AF.FIRST_NAME  ;
 
 
 -- 46. Encuentra todos los actores que no han participado en películas.
+SELECT A.ACTOR_ID, A.FIRST_NAME, A.LAST_NAME, FA.ACTOR_ID
+FROM ACTOR AS A 
+LEFT JOIN FILM_ACTOR AS FA 
+	ON A.ACTOR_ID = FA.ACTOR_ID
+WHERE FA.ACTOR_ID IS NULL ;
+
+
+-- 47. Selecciona el nombre de los actores y la cantidad de películas en las que han participado.
+SELECT DISTINCT A.ACTOR_ID, A.FIRST_NAME, A.LAST_NAME, FA.ACTOR_ID
+FROM ACTOR AS A 
+LEFT JOIN FILM_ACTOR AS FA 
+	ON A.ACTOR_ID = FA.ACTOR_ID
+WHERE FA.ACTOR_ID IS NULL ;
+
+-- 48. Crea una vista llamada “actor_num_peliculas” que muestre los nombres de los actores y el número de películas en las que han participado.
+CREATE VIEW ACTOR_NUM_PELICULAS AS 
+	SELECT A.FIRST_NAME, A.LAST_NAME, A.ACTOR_ID, COUNT(F.FILM_ID) AS NUMBER_OF_FILMS
+	FROM ACTOR AS A 
+	INNER JOIN FILM_ACTOR AS FA 
+		ON A.ACTOR_ID = FA.ACTOR_ID
+	INNER JOIN FILM AS F 
+		ON FA.FILM_ID = F.FILM_ID 
+	GROUP BY A.ACTOR_ID
+	ORDER BY A.ACTOR_ID;
+
+
+-- 49. Calcula el número total de alquileres realizados por cada cliente.
+SELECT C.CUSTOMER_ID, C.FIRST_NAME, C.LAST_NAME, COUNT(R.RENTAL_ID) AS TOTAL_RENTALS
+FROM CUSTOMER AS C 
+INNER JOIN RENTAL AS R 
+ON C.CUSTOMER_ID = R.CUSTOMER_ID
+GROUP BY C.CUSTOMER_ID
+ORDER BY C.CUSTOMER_ID;
+
+
+-- 50. Calcula la duración total de las películas en la categoría 'Action'.
+SELECT SUM(CF.LENGTH) AS TOTAL_LENGTH
+FROM CATEGORY_FILMS AS CF 
+WHERE CF."name" = 'Action';
+
+
+-- 51. Crea una tabla temporal llamada “cliente_rentas_temporal” para almacenar el total de alquileres por cliente.
+CREATE TEMPORARY TABLE CLIENTE_RENTAS_TEMPORAL AS 
+	SELECT C.CUSTOMER_ID, C.FIRST_NAME, C.LAST_NAME, COUNT(R.RENTAL_ID) AS TOTAL_RENTALS
+	FROM CUSTOMER AS C 
+	INNER JOIN RENTAL AS R 
+	ON C.CUSTOMER_ID = R.CUSTOMER_ID
+	GROUP BY C.CUSTOMER_ID;
+
+SELECT *
+FROM CLIENTE_RENTAS_TEMPORAL AS CRT
+ORDER BY CRT.CUSTOMER_ID;
+
+
+-- 52. Crea una tabla temporal llamada “peliculas_alquiladas” que almacene las películas que han sido alquiladas al menos 10 veces.
+CREATE TEMPORARY TABLE PELICULAS_ALQUILADAS AS 
+	SELECT F.TITLE, COUNT(R.RENTAL_ID) AS TIMES_RENTED
+	FROM FILM AS F
+	INNER JOIN INVENTORY AS I 
+   	 ON F.FILM_ID = I.FILM_ID
+	INNER JOIN RENTAL AS R 
+  	  ON I.INVENTORY_ID = R.INVENTORY_ID
+	GROUP BY F.TITLE
+	HAVING COUNT(R.RENTAL_ID) > 10;
+
+SELECT *
+FROM PELICULAS_ALQUILADAS AS PA
+ORDER BY PA.TITLE;
+
+
+-- 53. Encuentra el título de las películas que han sido alquiladas por el cliente con el nombre ‘Tammy Sanders’ y que aún no se han devuelto. Ordena
+-- los resultados alfabéticamente por título de película.
+SELECT F.TITLE,R.RETURN_DATE
+FROM FILM AS F 
+INNER JOIN INVENTORY AS I 
+	ON F.FILM_ID = I.FILM_ID
+INNER JOIN RENTAL AS R 
+	ON I.INVENTORY_ID = R.INVENTORY_ID
+INNER JOIN CUSTOMER AS C 
+	ON R.CUSTOMER_ID = C.CUSTOMER_ID
+WHERE C.FIRST_NAME = 'TAMMY' AND C.LAST_NAME = 'SANDERS' AND R.RETURN_DATE IS NOT NULL ;
+
+
+-- 54. Encuentra los nombres de los actores que han actuado en al menos una película que pertenece a la categoría ‘Sci-Fi’. Ordena los resultados
+-- alfabéticamente por apellido.
+SELECT DISTINCT AF.FIRST_NAME,AF.LAST_NAME
+FROM ACTOR_FILM AS AF 
+INNER JOIN CATEGORY_FILMS AS CF 
+ON AF.FILM_ID = CF.FILM_ID 
+WHERE CF."name" = 'Sci-Fi'
+ORDER BY AF.LAST_NAME;
+
+
+-- 55. Encuentra el nombre y apellido de los actores que han actuado en películas que se alquilaron después de que la película ‘Spartacus
+-- Cheaper’ se alquilara por primera vez. Ordena los resultados alfabéticamente por apellido.
+WITH PRIMER_ALQUILER AS (
+    SELECT MIN(R2.RENTAL_DATE) AS DATE_MIN
+    FROM FILM AS F
+    INNER JOIN INVENTORY AS I2 
+    	ON F.FILM_ID = I2.FILM_ID
+    INNER JOIN RENTAL AS R2 
+    	ON I2.INVENTORY_ID = R2.INVENTORY_ID
+    WHERE F.TITLE = 'SPARTACUS CHEAPER'
+)
+
+SELECT DISTINCT AF.FIRST_NAME, AF.LAST_NAME
+FROM ACTOR_FILM AS AF
+INNER JOIN INVENTORY AS I 
+	ON AF.FILM_ID = I.FILM_ID
+INNER JOIN RENTAL AS R 
+	ON I.INVENTORY_ID = R.INVENTORY_ID
+INNER JOIN PRIMER_ALQUILER AS PA 
+ON R.RENTAL_DATE > PA.DATE_MIN
+ORDER BY AF.LAST_NAME;
+ 
+
+
+-- 56. Encuentra el nombre y apellido de los actores que no han actuado en ninguna película de la categoría ‘Music’.
+SELECT DISTINCT AF.FIRST_NAME,AF.LAST_NAME
+FROM ACTOR_FILM AS AF 
+INNER JOIN CATEGORY_FILMS AS CF 
+	ON AF.FILM_ID = CF.FILM_ID 
+WHERE CF."name" NOT IN ('Music')
+ORDER BY AF.LAST_NAME;
+
+
+-- 57. Encuentra el título de todas las películas que fueron alquiladas por más de 8 días.
+SELECT F.TITLE, (R.RETURN_DATE - R.RENTAL_DATE) AS RENTAL_TIME
+FROM RENTAL AS R 
+INNER JOIN INVENTORY AS I 
+	ON R.INVENTORY_ID = I.INVENTORY_ID
+INNER JOIN FILM AS F 
+	ON I.FILM_ID = F.FILM_ID 
+WHERE R.RETURN_DATE IS NOT NULL 
+  AND (R.RETURN_DATE - R.RENTAL_DATE) > INTERVAL '8 days';
+
+
+-- 58. Encuentra el título de todas las películas que son de la misma categoría que ‘Animation’.
+SELECT CF.TITLE
+FROM CATEGORY_FILMS AS CF 
+WHERE CF."name" = 'Animation';
+
+
+-- 59. Encuentra los nombres de las películas que tienen la misma duración que la película con el título ‘Dancing Fever’. 
+-- Ordena los resultados alfabéticamente por título de película.
+SELECT F.TITLE,F.LENGTH
+FROM FILM AS F 
+WHERE LENGTH = (
+    SELECT LENGTH
+    FROM FILM
+    WHERE TITLE = 'DANCING FEVER'
+)
+ORDER BY F.TITLE ;
+
+
+-- 60. Encuentra los nombres de los clientes que han alquilado al menos 7 películas distintas. 
+-- Ordena los resultados alfabéticamente por apellido.
